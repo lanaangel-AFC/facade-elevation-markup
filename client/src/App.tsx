@@ -1,30 +1,29 @@
 import { Switch, Route, Router } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
-import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
-
-function AppRouter() {
-  return (
-    <Switch>
-      {/* Register a <Route path="..." component={...} /> for EVERY page linked in your sidebar/nav. Missing routes cause 404. */}
-      {/* <Route path="/" component={Home}/> */}
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+import ProjectList from "./pages/project-list";
+import ProjectDetail from "./pages/project-detail";
+import AnnotationCanvas from "./pages/annotation-canvas";
+import NotFound from "./pages/not-found";
+import { PerplexityAttribution } from "./components/PerplexityAttribution";
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
+      <div className="min-h-screen bg-background text-foreground">
         <Router hook={useHashLocation}>
-          <AppRouter />
+          <Switch>
+            <Route path="/" component={ProjectList} />
+            <Route path="/projects/:id" component={ProjectDetail} />
+            <Route path="/projects/:projectId/elevations/:elevationId" component={AnnotationCanvas} />
+            <Route component={NotFound} />
+          </Switch>
         </Router>
-      </TooltipProvider>
+        <PerplexityAttribution />
+      </div>
+      <Toaster />
     </QueryClientProvider>
   );
 }
