@@ -23,6 +23,7 @@ sqlite.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     address TEXT NOT NULL,
+    tracker_url TEXT,
     created_at TEXT NOT NULL
   );
   CREATE TABLE IF NOT EXISTS elevations (
@@ -47,11 +48,19 @@ sqlite.exec(`
   );
 `);
 
+// Migration: add tracker_url column to existing databases
+try {
+  sqlite.exec(`ALTER TABLE projects ADD COLUMN tracker_url TEXT`);
+} catch (e) {
+  // Column already exists - ignore
+}
+
 export interface IStorage {
   // Projects
   getProjects(): Project[];
   getProject(id: number): Project | undefined;
   createProject(data: InsertProject): Project;
+  updateProject(id: number, data: Partial<InsertProject>): Project | undefined;
   deleteProject(id: number): void;
 
   // Elevations
@@ -82,6 +91,11 @@ export const storage: IStorage = {
   },
   createProject(data: InsertProject) {
     return db.insert(projects).values(data).returning().get();
+  },
+  updateProject(id: number, data: Partial<InsertProject>) {
+    const existing = db.select().from(projects).where(eq(projects.id, id)).get();
+    if (!existing) return undefined;
+    return db.update(projects).set(data).where(eq(projects.id, id)).returning().get();
   },
   deleteProject(id: number) {
     // Cascading delete handled by foreign keys

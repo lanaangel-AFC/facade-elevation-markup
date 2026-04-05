@@ -30,8 +30,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, ZoomIn, ZoomOut, RotateCcw, Crosshair } from "lucide-react";
-import type { Elevation, Marker } from "@shared/schema";
+import { ArrowLeft, ZoomIn, ZoomOut, RotateCcw, Crosshair, ExternalLink } from "lucide-react";
+import type { Project, Elevation, Marker } from "@shared/schema";
 
 const STATUS_COLORS: Record<string, string> = {
   open: "#EF4444",
@@ -73,6 +73,14 @@ export default function AnnotationCanvas() {
   const lastTouchCenter = useRef<{ x: number; y: number } | null>(null);
 
   // Queries
+  const { data: project } = useQuery<Project>({
+    queryKey: ["/api/projects", projectId],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/projects/${projectId}`);
+      return res.json();
+    },
+  });
+
   const { data: elevation } = useQuery<Elevation>({
     queryKey: ["/api/elevations", elevationId],
     queryFn: async () => {
@@ -475,6 +483,18 @@ export default function AnnotationCanvas() {
                 rows={2}
               />
             </div>
+            {markerDialog.editing && project?.trackerUrl && (
+              <a
+                href={`${project.trackerUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                data-testid="link-view-in-tracker"
+              >
+                <ExternalLink className="w-4 h-4" />
+                View in Defect Tracker
+              </a>
+            )}
             <div className="flex gap-2">
               <Button
                 type="submit"

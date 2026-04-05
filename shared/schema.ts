@@ -6,6 +6,7 @@ export const projects = sqliteTable("projects", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   address: text("address").notNull(),
+  trackerUrl: text("tracker_url"), // URL to Defect Tracker report page, e.g. https://facade-tracker-production.up.railway.app/#/projects/1/reports/1
   createdAt: text("created_at").notNull(),
 });
 

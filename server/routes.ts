@@ -72,6 +72,12 @@ export async function registerRoutes(
     res.status(201).json(project);
   });
 
+  app.patch("/api/projects/:id", (req, res) => {
+    const project = storage.updateProject(Number(req.params.id), req.body);
+    if (!project) return res.status(404).json({ message: "Project not found" });
+    res.json(project);
+  });
+
   app.delete("/api/projects/:id", (req, res) => {
     // Delete uploaded files for all elevations in project
     const elev = storage.getElevationsByProject(Number(req.params.id));

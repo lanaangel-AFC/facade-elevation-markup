@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Upload, FileImage, FileText, Trash2, Image } from "lucide-react";
+import { ArrowLeft, Upload, FileImage, FileText, Trash2, Image, Settings, Link2 } from "lucide-react";
 import type { Project, Elevation } from "@shared/schema";
 
 export default function ProjectDetail() {
@@ -33,8 +33,10 @@ export default function ProjectDetail() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [elevName, setElevName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [editTrackerUrl, setEditTrackerUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: project } = useQuery<Project>({
@@ -102,6 +104,18 @@ export default function ProjectDetail() {
     },
   });
 
+  const updateProjectMutation = useMutation({
+    mutationFn: async (data: { trackerUrl?: string }) => {
+      const res = await apiRequest("PATCH", `/api/projects/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", id] });
+      setSettingsOpen(false);
+      toast({ title: "Tracker link saved" });
+    },
+  });
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <div className="flex items-center gap-3 mb-6">
@@ -116,6 +130,52 @@ export default function ProjectDetail() {
           </h1>
           <p className="text-xs text-muted-foreground truncate">{project?.address}</p>
         </div>
+        <Dialog open={settingsOpen} onOpenChange={(v) => {
+          setSettingsOpen(v);
+          if (v && project) setEditTrackerUrl(project.trackerUrl || "");
+        }}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" data-testid="button-settings">
+              <Settings className="w-4 h-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Project Settings</DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateProjectMutation.mutate({ trackerUrl: editTrackerUrl.trim() || undefined });
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Label htmlFor="trackerUrl">Defect Tracker Report URL</Label>
+                <Input
+                  id="trackerUrl"
+                  data-testid="input-tracker-url"
+                  value={editTrackerUrl}
+                  onChange={(e) => setEditTrackerUrl(e.target.value)}
+                  placeholder="e.g. https://facade-tracker-production.up.railway.app/#/projects/1/reports/1"
+                  className="text-xs"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Open your Defect Tracker, go to the matching report, and paste the URL from your browser's address bar.
+                  Defect markers will link directly to the tracker.
+                </p>
+              </div>
+              <Button
+                type="submit"
+                data-testid="button-save-settings"
+                disabled={updateProjectMutation.isPending}
+                className="w-full"
+              >
+                {updateProjectMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="icon" className="text-destructive" data-testid="button-delete-project">

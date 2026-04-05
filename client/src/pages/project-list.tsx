@@ -22,13 +22,14 @@ export default function ProjectList() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [trackerUrl, setTrackerUrl] = useState("");
 
   const { data: projects, isLoading } = useQuery<ProjectWithCount[]>({
     queryKey: ["/api/projects"],
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; address: string }) => {
+    mutationFn: async (data: { name: string; address: string; trackerUrl?: string }) => {
       const res = await apiRequest("POST", "/api/projects", data);
       return res.json();
     },
@@ -37,6 +38,7 @@ export default function ProjectList() {
       setOpen(false);
       setName("");
       setAddress("");
+      setTrackerUrl("");
     },
   });
 
@@ -66,7 +68,7 @@ export default function ProjectList() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (name.trim() && address.trim()) {
-                  createMutation.mutate({ name: name.trim(), address: address.trim() });
+                  createMutation.mutate({ name: name.trim(), address: address.trim(), trackerUrl: trackerUrl.trim() || undefined });
                 }
               }}
               className="space-y-4"
@@ -90,6 +92,20 @@ export default function ProjectList() {
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="e.g. 123 George Street, Sydney NSW 2000"
                 />
+              </div>
+              <div>
+                <Label htmlFor="trackerUrl">Defect Tracker Link (optional)</Label>
+                <Input
+                  id="trackerUrl"
+                  data-testid="input-tracker-url"
+                  value={trackerUrl}
+                  onChange={(e) => setTrackerUrl(e.target.value)}
+                  placeholder="Paste your Defect Tracker report URL"
+                  className="text-xs"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Links defect markers to the Defect Tracker report
+                </p>
               </div>
               <Button
                 type="submit"
