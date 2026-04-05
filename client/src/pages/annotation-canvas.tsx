@@ -92,8 +92,9 @@ export default function AnnotationCanvas() {
   // Load image or PDF
   useEffect(() => {
     if (!elevation) return;
+    const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
     if (elevation.fileType === "image") {
-      setImageSrc(`/api/uploads/${elevation.filename}`);
+      setImageSrc(`${API_BASE}/api/uploads/${elevation.filename}`);
     } else if (elevation.fileType === "pdf") {
       loadPdf(elevation.filename);
     }
@@ -102,9 +103,11 @@ export default function AnnotationCanvas() {
   const loadPdf = async (filename: string) => {
     try {
       const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-      const url = `/api/uploads/${filename}`;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+      const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
+      const url = `${API_BASE}/api/uploads/${filename}`;
       const response = await fetch(url);
+      if (!response.ok) throw new Error(`Failed to fetch PDF: ${response.status}`);
       const arrayBuffer = await response.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const page = await pdf.getPage(1);
