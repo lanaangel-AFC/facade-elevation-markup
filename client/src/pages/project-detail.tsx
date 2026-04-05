@@ -2,6 +2,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Link, useParams, useLocation } from "wouter";
 import { useState, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ import type { Project, Elevation } from "@shared/schema";
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [elevName, setElevName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -56,11 +58,15 @@ export default function ProjectDetail() {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("name", name);
-      const res = await fetch(`/api/projects/${id}/elevations`, {
+      const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
+      const res = await fetch(`${API_BASE}/api/projects/${id}/elevations`, {
         method: "POST",
         body: formData,
       });
-      if (!res.ok) throw new Error("Upload failed");
+      if (!res.ok) {
+        const text = await res.text().catch(() => res.statusText);
+        throw new Error(text || "Upload failed");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -68,6 +74,13 @@ export default function ProjectDetail() {
       setUploadOpen(false);
       setElevName("");
       setSelectedFile(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
