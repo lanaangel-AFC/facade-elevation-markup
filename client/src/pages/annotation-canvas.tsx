@@ -111,7 +111,12 @@ export default function AnnotationCanvas() {
       const arrayBuffer = await response.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 2 });
+      // Render at a scale that produces a good resolution image
+      // Target ~2400px on the longest side for crisp rendering on retina displays
+      const baseViewport = page.getViewport({ scale: 1 });
+      const maxDim = Math.max(baseViewport.width, baseViewport.height);
+      const renderScale = Math.min(2400 / maxDim, 3); // Cap at 3x to avoid memory issues
+      const viewport = page.getViewport({ scale: renderScale });
       const canvas = document.createElement("canvas");
       canvas.width = viewport.width;
       canvas.height = viewport.height;
@@ -339,8 +344,8 @@ export default function AnnotationCanvas() {
       {/* Canvas area */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-hidden relative bg-muted/30"
-        style={{ cursor: placingMode ? "crosshair" : scale > 1 ? "grab" : "default", touchAction: "none" }}
+        className="flex-1 overflow-auto relative bg-muted/30"
+        style={{ cursor: placingMode ? "crosshair" : scale > 1 ? "grab" : "default", touchAction: scale > 1 ? "none" : "auto" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -363,7 +368,7 @@ export default function AnnotationCanvas() {
               ref={imageRef}
               src={imageSrc}
               alt="Elevation drawing"
-              className="max-w-full h-auto select-none"
+              className="w-full h-auto select-none"
               draggable={false}
               onLoad={() => setImageLoaded(true)}
               data-testid="img-elevation"
