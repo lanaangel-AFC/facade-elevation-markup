@@ -66,6 +66,8 @@ export default function AnnotationCanvas() {
   const [formUid, setFormUid] = useState("");
   const [formStatus, setFormStatus] = useState("open");
   const [formNote, setFormNote] = useState("");
+  const [deepLink, setDeepLink] = useState<string | null>(null);
+  const [deepLinkLoading, setDeepLinkLoading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -174,6 +176,40 @@ export default function AnnotationCanvas() {
     setFormUid("");
     setFormStatus("open");
     setFormNote("");
+    setDeepLink(null);
+    setDeepLinkLoading(false);
+  };
+
+  // Resolve a deep link to a specific defect in the Defect Tracker
+  const resolveDeepLink = async (defectUid: string) => {
+    if (!project?.trackerUrl) return;
+    setDeepLinkLoading(true);
+    setDeepLink(null);
+    try {
+      // Parse tracker URL to extract base URL and project ID
+      // Formats: https://.../#/projects/2, https://.../#/projects/2/reports/3, or just https://...
+      const hashIdx = project.trackerUrl.indexOf("/#/");
+      const baseUrl = hashIdx >= 0 ? project.trackerUrl.substring(0, hashIdx) : project.trackerUrl.replace(/\/$/, "");
+      const hashPath = hashIdx >= 0 ? project.trackerUrl.substring(hashIdx + 3) : "";
+      const projectMatch = hashPath.match(/^projects\/(\d+)/);
+      if (!projectMatch) {
+        setDeepLink(project.trackerUrl);
+        return;
+      }
+      const trackerProjectId = projectMatch[1];
+      const res = await fetch(`${baseUrl}/api/projects/${trackerProjectId}/defects/by-uid/${encodeURIComponent(defectUid)}`);
+      if (res.ok) {
+        const defect = await res.json();
+        setDeepLink(`${baseUrl}/#/projects/${trackerProjectId}/reports/${defect.reportId}/defects/${defect.id}`);
+      } else {
+        // Defect not found by UID — fall back to project page
+        setDeepLink(project.trackerUrl);
+      }
+    } catch {
+      setDeepLink(project.trackerUrl);
+    } finally {
+      setDeepLinkLoading(false);
+    }
   };
 
   // Handle canvas click for placing markers
@@ -198,6 +234,8 @@ export default function AnnotationCanvas() {
     setFormStatus(marker.status);
     setFormNote(marker.note || "");
     setMarkerDialog({ open: true, x: marker.xPercent, y: marker.yPercent, editing: marker });
+    // Resolve deep link to specific defect in tracker
+    resolveDeepLink(marker.defectUid);
   };
 
   // Zoom controls
@@ -484,16 +522,23 @@ export default function AnnotationCanvas() {
               />
             </div>
             {markerDialog.editing && project?.trackerUrl && (
-              <a
-                href={`${project.trackerUrl}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
-                data-testid="link-view-in-tracker"
-              >
-                <ExternalLink className="w-4 h-4" />
-                View in Defect Tracker
-              </a>
+              deepLinkLoading ? (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted text-muted-foreground text-sm">
+                  <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  Looking up defect in tracker...
+                </div>
+              ) : deepLink ? (
+                <a
+                  href={deepLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                  data-testid="link-view-in-tracker"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {deepLink === project.trackerUrl ? "Open Defect Tracker" : "View Defect in Tracker"}
+                </a>
+              ) : null
             )}
             <div className="flex gap-2">
               <Button
