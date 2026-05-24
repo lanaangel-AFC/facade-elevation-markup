@@ -807,11 +807,11 @@ export default function AnnotationCanvas() {
             {elevation?.name || "Loading..."}
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <Button
             variant="outline"
             size="sm"
-            className="h-8 text-xs gap-1"
+            className="hidden sm:inline-flex h-8 text-xs gap-1"
             onClick={exportPdf}
             disabled={exporting || !imageSrc}
             data-testid="button-export-pdf"
@@ -819,14 +819,25 @@ export default function AnnotationCanvas() {
             <Download className="w-3.5 h-3.5" />
             {exporting ? "Exporting..." : "Export PDF"}
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomOut} data-testid="button-zoom-out">
+          <Button
+            variant="outline"
+            size="icon"
+            className="sm:hidden h-8 w-8"
+            onClick={exportPdf}
+            disabled={exporting || !imageSrc}
+            data-testid="button-export-pdf-compact"
+            title="Export PDF"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={zoomOut} data-testid="button-zoom-out">
             <ZoomOut className="w-4 h-4" />
           </Button>
-          <span className="text-xs text-muted-foreground w-10 text-center">{Math.round(scale * 100)}%</span>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomIn} data-testid="button-zoom-in">
+          <span className="hidden sm:inline text-xs text-muted-foreground w-10 text-center flex-shrink-0">{Math.round(scale * 100)}%</span>
+          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={zoomIn} data-testid="button-zoom-in">
             <ZoomIn className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={resetZoom} data-testid="button-zoom-reset">
+          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={resetZoom} data-testid="button-zoom-reset">
             <RotateCcw className="w-3.5 h-3.5" />
           </Button>
         </div>
@@ -834,28 +845,28 @@ export default function AnnotationCanvas() {
 
       {/* Status bar */}
       <div className="flex items-center justify-between gap-2 px-3 py-1.5 border-b bg-muted/50 flex-shrink-0">
-        <div className="flex items-center gap-3 text-xs min-w-0">
-          <span className="flex items-center gap-1">
+        <div className="flex items-center gap-2 sm:gap-3 text-xs min-w-0 overflow-hidden">
+          <span className="flex items-center gap-1 flex-shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#EF4444]" />
-            Open: {counts.open}
+            <span className="hidden sm:inline">Open:&nbsp;</span>{counts.open}
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 flex-shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
-            In Progress: {counts.in_progress}
+            <span className="hidden sm:inline">In Progress:&nbsp;</span>{counts.in_progress}
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 flex-shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#22C55E]" />
-            Complete: {counts.complete}
+            <span className="hidden sm:inline">Complete:&nbsp;</span>{counts.complete}
           </span>
           {annotateMode && (
-            <span className="text-muted-foreground hidden sm:inline">
+            <span className="text-muted-foreground hidden sm:inline truncate">
               {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved ✓" : ""}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {/* Mode toggle */}
-          <div className="flex rounded-md border overflow-hidden">
+          <div className="flex rounded-md border overflow-hidden flex-shrink-0">
             <Button
               size="sm"
               variant={!annotateMode ? "default" : "ghost"}
@@ -879,12 +890,13 @@ export default function AnnotationCanvas() {
             <Button
               size="sm"
               variant={placingMode ? "default" : "outline"}
-              className="h-7 text-xs gap-1"
+              className="h-7 text-xs gap-1 flex-shrink-0"
               onClick={() => setPlacingMode(!placingMode)}
               data-testid="button-place-marker"
             >
               <Crosshair className="w-3 h-3" />
-              {placingMode ? "Tap to place" : "Add Marker"}
+              <span className="hidden sm:inline">{placingMode ? "Tap to place" : "Add Marker"}</span>
+              <span className="sm:hidden">{placingMode ? "Tap" : "Add"}</span>
             </Button>
           )}
         </div>
@@ -990,7 +1002,7 @@ export default function AnnotationCanvas() {
               <Trash2 className="w-4 h-4" />
             </Button>
           </div>
-          <span className="text-xs text-muted-foreground ml-auto sm:hidden">
+          <span className="text-xs text-muted-foreground ml-auto sm:hidden flex-shrink-0">
             {saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved ✓" : ""}
           </span>
         </div>
