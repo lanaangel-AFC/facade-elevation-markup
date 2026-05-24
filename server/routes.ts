@@ -118,6 +118,17 @@ export async function registerRoutes(
     res.status(201).json(elevation);
   });
 
+  app.patch("/api/elevations/:id/annotations", (req, res) => {
+    const id = Number(req.params.id);
+    const { annotationData } = req.body ?? {};
+    if (annotationData !== null && annotationData !== undefined && typeof annotationData !== "string") {
+      return res.status(400).json({ message: "annotationData must be a string or null" });
+    }
+    const updated = storage.updateElevationAnnotations(id, annotationData ?? null);
+    if (!updated) return res.status(404).json({ message: "Elevation not found" });
+    res.json({ id: updated.id, annotationData: updated.annotationData });
+  });
+
   app.delete("/api/elevations/:id", (req, res) => {
     const elev = storage.getElevation(Number(req.params.id));
     if (elev) {

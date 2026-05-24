@@ -32,6 +32,7 @@ sqlite.exec(`
     name TEXT NOT NULL,
     filename TEXT NOT NULL,
     file_type TEXT NOT NULL,
+    annotation_data TEXT,
     created_at TEXT NOT NULL,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
   );
@@ -55,6 +56,13 @@ try {
   // Column already exists - ignore
 }
 
+// Migration: add annotation_data column to elevations
+try {
+  sqlite.exec(`ALTER TABLE elevations ADD COLUMN annotation_data TEXT`);
+} catch (e) {
+  // Column already exists - ignore
+}
+
 export interface IStorage {
   // Projects
   getProjects(): Project[];
@@ -67,6 +75,7 @@ export interface IStorage {
   getElevationsByProject(projectId: number): Elevation[];
   getElevation(id: number): Elevation | undefined;
   createElevation(data: InsertElevation): Elevation;
+  updateElevationAnnotations(id: number, annotationData: string | null): Elevation | undefined;
   deleteElevation(id: number): void;
 
   // Markers
@@ -111,6 +120,11 @@ export const storage: IStorage = {
   },
   createElevation(data: InsertElevation) {
     return db.insert(elevations).values(data).returning().get();
+  },
+  updateElevationAnnotations(id: number, annotationData: string | null) {
+    const existing = db.select().from(elevations).where(eq(elevations.id, id)).get();
+    if (!existing) return undefined;
+    return db.update(elevations).set({ annotationData }).where(eq(elevations.id, id)).returning().get();
   },
   deleteElevation(id: number) {
     db.delete(elevations).where(eq(elevations.id, id)).run();

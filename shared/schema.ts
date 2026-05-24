@@ -16,6 +16,7 @@ export const elevations = sqliteTable("elevations", {
   name: text("name").notNull(),
   filename: text("filename").notNull(),
   fileType: text("file_type").notNull(), // "pdf" or "image"
+  annotationData: text("annotation_data"), // JSON string: { strokes, labels }
   createdAt: text("created_at").notNull(),
 });
 
