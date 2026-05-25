@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elevation-markup-v9';
+const CACHE_NAME = 'elevation-markup-v10';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

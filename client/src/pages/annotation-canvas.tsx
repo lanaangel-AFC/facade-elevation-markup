@@ -136,6 +136,8 @@ export default function AnnotationCanvas() {
   const annotationsLoadedRef = useRef(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const labelInputRef = useRef<HTMLInputElement>(null);
+  // Holds the latest redrawAll so resizeCanvas never captures a stale closure
+  const redrawAllRef = useRef<() => void>(() => {});
 
   // Queries
   const { data: project } = useQuery<Project>({
@@ -252,7 +254,8 @@ export default function AnnotationCanvas() {
     onSuccess: () => {
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 1500);
-      queryClient.invalidateQueries({ queryKey: ["/api/elevations", elevationId] });
+      // Do NOT invalidate the elevation query here — it's unnecessary and can cause
+      // a re-render race that clears the canvas before strokes are reloaded
     },
     onError: () => setSaveStatus("idle"),
   });
@@ -405,8 +408,8 @@ export default function AnnotationCanvas() {
       const ctx = canvas.getContext("2d");
       if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-    redrawAll();
-  }, [scale]);
+    redrawAllRef.current();
+  }, [scale]); // always calls the latest redrawAll via ref — no stale-closure issue
 
   // Redraw all strokes + labels onto the canvas
   const redrawAll = useCallback(() => {
@@ -439,25 +442,32 @@ export default function AnnotationCanvas() {
     }
   }, [strokes, labels]);
 
+  // Keep ref always pointing to the latest redrawAll
+  redrawAllRef.current = redrawAll;
+
   // Redraw whenever strokes/labels change
   useEffect(() => {
     redrawAll();
   }, [redrawAll]);
 
-  // Set up ResizeObserver on the image
+  // Keep a stable ref to resizeCanvas so the ResizeObserver doesn't re-register on every stroke
+  const resizeCanvasRef = useRef(resizeCanvas);
+  resizeCanvasRef.current = resizeCanvas;
+
+  // Set up ResizeObserver on the image (stable — only re-registers when image loads)
   useEffect(() => {
     const img = imageRef.current;
     if (!img || !imageLoaded) return;
-    const ro = new ResizeObserver(() => resizeCanvas());
+    const ro = new ResizeObserver(() => resizeCanvasRef.current());
     ro.observe(img);
-    resizeCanvas();
+    resizeCanvasRef.current();
     return () => ro.disconnect();
-  }, [imageLoaded, resizeCanvas]);
+  }, [imageLoaded]); // stable — resizeCanvas accessed via ref, not captured in closure
 
-  // Resize on scale change too (because rendered bounding box changes)
+  // Resize whenever scale changes (zoom in/out)
   useEffect(() => {
-    resizeCanvas();
-  }, [scale, resizeCanvas]);
+    resizeCanvasRef.current();
+  }, [scale]);
 
   // Debounced auto-save
   const scheduleSave = useCallback((nextStrokes: Stroke[], nextLabels: TextLabel[]) => {
